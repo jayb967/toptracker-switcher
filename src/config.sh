@@ -28,3 +28,7 @@ INTERVAL_SECONDS=900
 
 # How many seconds before screenshot to switch windows
 WARN_BEFORE=30
+
+# Keep-alive: prevent idle detection by simulating minimal activity
+# Set to 0 to disable, or number of seconds between nudges (e.g., 60 = every minute)
+KEEPALIVE_INTERVAL=60

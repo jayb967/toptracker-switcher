@@ -11,6 +11,7 @@ Never get caught with the wrong window in focus again. This tool monitors TopTra
 - 🎨 **Color-coded urgency** — Green → Yellow → Orange → Red as time runs out
 - 🔔 **Notifications** — Audible + visual alerts before screenshots
 - 📊 **Multi-project support** — Configure different ports per project
+- 💓 **Keep-alive** — Prevents idle timeout with minimal mouse nudges
 
 ## Screenshots
 
@@ -63,6 +64,9 @@ get_project_port() {
         *)              echo "" ;;
     esac
 }
+
+# Keep-alive interval (seconds). Set to 0 to disable.
+KEEPALIVE_INTERVAL=60
 ```
 
 ## Commands

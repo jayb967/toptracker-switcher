@@ -10,6 +10,7 @@ CONFIG_FILE="$SCRIPT_DIR/config.sh"
 TOPTRACKER_EMAIL="${TOPTRACKER_EMAIL:-}"
 INTERVAL_SECONDS="${INTERVAL_SECONDS:-900}"
 WARN_BEFORE="${WARN_BEFORE:-30}"
+KEEPALIVE_INTERVAL="${KEEPALIVE_INTERVAL:-60}"
 
 DB_PATH="$HOME/Library/Application Support/TopTracker/TopTracker.db"
 LOG_PATH="$HOME/Library/Application Support/TopTracker/application.log"
@@ -19,6 +20,32 @@ mkdir -p "$(dirname "$STATE_FILE")"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+}
+
+# Keep-alive: nudge mouse 1px to prevent idle detection
+last_keepalive=0
+keepalive_nudge() {
+    if [[ "$KEEPALIVE_INTERVAL" -le 0 ]]; then
+        return
+    fi
+    
+    local now=$(date +%s)
+    if [[ $((now - last_keepalive)) -ge $KEEPALIVE_INTERVAL ]]; then
+        # Get current mouse position and nudge 1px right then back
+        if command -v cliclick &>/dev/null; then
+            local pos=$(cliclick p 2>/dev/null)
+            if [[ -n "$pos" ]]; then
+                local x=$(echo "$pos" | cut -d',' -f1)
+                local y=$(echo "$pos" | cut -d',' -f2)
+                cliclick m:"$((x+1)),$y" m:"$x,$y" 2>/dev/null
+            fi
+        else
+            # Fallback: use osascript for a tiny mouse move
+            osascript -e 'tell application "System Events" to key code 63' 2>/dev/null || true  # fn key (no visible effect)
+        fi
+        last_keepalive=$now
+        log "♥ Keep-alive ping"
+    fi
 }
 
 # Auto-detect TopTracker email if not set
@@ -141,6 +168,9 @@ focus_project_windows() {
 main() {
     log "TopTracker Switcher - Predictive Mode"
     log "Interval: ${INTERVAL_SECONDS}s, Warning: ${WARN_BEFORE}s before"
+    if [[ "$KEEPALIVE_INTERVAL" -gt 0 ]]; then
+        log "Keep-alive: every ${KEEPALIVE_INTERVAL}s"
+    fi
     
     local last_warned=0
     
@@ -181,6 +211,9 @@ main() {
                 fi
             fi
         fi
+        
+        # Keep-alive nudge to prevent idle detection
+        keepalive_nudge
         
         sleep 5
     done
