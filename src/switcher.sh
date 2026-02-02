@@ -15,6 +15,9 @@ PREVENT_SLEEP="${PREVENT_SLEEP:-1}"
 
 # Caffeinate management (prevents screen sleep)
 caffeinate_pid=""
+last_project_seen=0
+SLEEP_GRACE_PERIOD=300  # Keep screen awake for 5 min after tracking stops
+
 start_caffeinate() {
     if [[ "$PREVENT_SLEEP" != "1" ]]; then return; fi
     if [[ -z "$caffeinate_pid" ]] || ! kill -0 "$caffeinate_pid" 2>/dev/null; then
@@ -28,6 +31,13 @@ stop_caffeinate() {
         kill "$caffeinate_pid" 2>/dev/null
         caffeinate_pid=""
         log "☕ Caffeinate stopped (sleep allowed)"
+    fi
+}
+maybe_stop_caffeinate() {
+    local now=$(date +%s)
+    # Only stop if no project for SLEEP_GRACE_PERIOD seconds
+    if [[ $((now - last_project_seen)) -ge $SLEEP_GRACE_PERIOD ]]; then
+        stop_caffeinate
     fi
 }
 trap stop_caffeinate EXIT
@@ -248,10 +258,13 @@ main() {
         local project=$(get_current_project)
         
         if [[ -z "$project" ]]; then
-            stop_caffeinate
+            maybe_stop_caffeinate
             sleep 30
             continue
         fi
+        
+        # Track when we last saw an active project
+        last_project_seen=$(date +%s)
         
         # Keep screen awake while tracking
         start_caffeinate
