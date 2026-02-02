@@ -11,6 +11,26 @@ TOPTRACKER_EMAIL="${TOPTRACKER_EMAIL:-}"
 INTERVAL_SECONDS="${INTERVAL_SECONDS:-900}"
 WARN_BEFORE="${WARN_BEFORE:-30}"
 KEEPALIVE_ENABLED="${KEEPALIVE_ENABLED:-1}"
+PREVENT_SLEEP="${PREVENT_SLEEP:-1}"
+
+# Caffeinate management (prevents screen sleep)
+caffeinate_pid=""
+start_caffeinate() {
+    if [[ "$PREVENT_SLEEP" != "1" ]]; then return; fi
+    if [[ -z "$caffeinate_pid" ]] || ! kill -0 "$caffeinate_pid" 2>/dev/null; then
+        caffeinate -d -i &
+        caffeinate_pid=$!
+        log "☕ Caffeinate started (preventing sleep)"
+    fi
+}
+stop_caffeinate() {
+    if [[ -n "$caffeinate_pid" ]] && kill -0 "$caffeinate_pid" 2>/dev/null; then
+        kill "$caffeinate_pid" 2>/dev/null
+        caffeinate_pid=""
+        log "☕ Caffeinate stopped (sleep allowed)"
+    fi
+}
+trap stop_caffeinate EXIT
 
 DB_PATH="$HOME/Library/Application Support/TopTracker/TopTracker.db"
 LOG_PATH="$HOME/Library/Application Support/TopTracker/application.log"
@@ -218,6 +238,9 @@ main() {
     if [[ "$KEEPALIVE_ENABLED" == "1" ]]; then
         log "Keep-alive: enabled (random 25-60s)"
     fi
+    if [[ "$PREVENT_SLEEP" == "1" ]]; then
+        log "Prevent sleep: enabled (caffeinate)"
+    fi
     
     local last_warned=0
     
@@ -225,9 +248,13 @@ main() {
         local project=$(get_current_project)
         
         if [[ -z "$project" ]]; then
+            stop_caffeinate
             sleep 30
             continue
         fi
+        
+        # Keep screen awake while tracking
+        start_caffeinate
         
         local now=$(date +%s)
         local next_screenshot=$(get_next_screenshot_time)

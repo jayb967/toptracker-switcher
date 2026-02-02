@@ -32,3 +32,7 @@ WARN_BEFORE=30
 # Keep-alive: prevent idle detection by simulating minimal activity
 # Set to 1 to enable, 0 to disable. Interval is randomized (25-60 seconds)
 KEEPALIVE_ENABLED=1
+
+# Prevent screen sleep/lock while tracking (uses caffeinate)
+# Set to 1 to enable, 0 to disable
+PREVENT_SLEEP=1
