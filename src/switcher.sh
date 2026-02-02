@@ -10,7 +10,7 @@ CONFIG_FILE="$SCRIPT_DIR/config.sh"
 TOPTRACKER_EMAIL="${TOPTRACKER_EMAIL:-}"
 INTERVAL_SECONDS="${INTERVAL_SECONDS:-900}"
 WARN_BEFORE="${WARN_BEFORE:-30}"
-KEEPALIVE_INTERVAL="${KEEPALIVE_INTERVAL:-60}"
+KEEPALIVE_ENABLED="${KEEPALIVE_ENABLED:-1}"
 
 DB_PATH="$HOME/Library/Application Support/TopTracker/TopTracker.db"
 LOG_PATH="$HOME/Library/Application Support/TopTracker/application.log"
@@ -24,13 +24,20 @@ log() {
 
 # Keep-alive: nudge mouse 1px to prevent idle detection
 last_keepalive=0
+next_keepalive_interval=0
 keepalive_nudge() {
-    if [[ "$KEEPALIVE_INTERVAL" -le 0 ]]; then
+    if [[ "$KEEPALIVE_ENABLED" != "1" ]] && [[ "$KEEPALIVE_INTERVAL" -le 0 ]]; then
         return
     fi
     
     local now=$(date +%s)
-    if [[ $((now - last_keepalive)) -ge $KEEPALIVE_INTERVAL ]]; then
+    
+    # Set random interval if not set (25-60 seconds)
+    if [[ $next_keepalive_interval -eq 0 ]]; then
+        next_keepalive_interval=$((25 + RANDOM % 36))
+    fi
+    
+    if [[ $((now - last_keepalive)) -ge $next_keepalive_interval ]]; then
         # Get current mouse position and nudge 1px right then back
         if command -v cliclick &>/dev/null; then
             local pos=$(cliclick p 2>/dev/null)
@@ -44,7 +51,9 @@ keepalive_nudge() {
             osascript -e 'tell application "System Events" to key code 63' 2>/dev/null || true  # fn key (no visible effect)
         fi
         last_keepalive=$now
-        log "♥ Keep-alive ping"
+        # Set next random interval (25-60 seconds)
+        next_keepalive_interval=$((25 + RANDOM % 36))
+        log "♥ Keep-alive (next in ${next_keepalive_interval}s)"
     fi
 }
 
@@ -206,8 +215,8 @@ focus_project_windows() {
 main() {
     log "TopTracker Switcher - Predictive Mode"
     log "Interval: ${INTERVAL_SECONDS}s, Warning: ${WARN_BEFORE}s before"
-    if [[ "$KEEPALIVE_INTERVAL" -gt 0 ]]; then
-        log "Keep-alive: every ${KEEPALIVE_INTERVAL}s"
+    if [[ "$KEEPALIVE_ENABLED" == "1" ]]; then
+        log "Keep-alive: enabled (random 25-60s)"
     fi
     
     local last_warned=0

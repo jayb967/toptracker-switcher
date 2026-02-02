@@ -30,5 +30,5 @@ INTERVAL_SECONDS=900
 WARN_BEFORE=30
 
 # Keep-alive: prevent idle detection by simulating minimal activity
-# Set to 0 to disable, or number of seconds between nudges (e.g., 60 = every minute)
-KEEPALIVE_INTERVAL=60
+# Set to 1 to enable, 0 to disable. Interval is randomized (25-60 seconds)
+KEEPALIVE_ENABLED=1
