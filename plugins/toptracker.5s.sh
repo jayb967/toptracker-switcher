@@ -36,6 +36,38 @@ get_last_screenshot_time() {
     fi
 }
 
+get_activity_start_time() {
+    local last_line=$(grep "Sent create activity request" "$LOG_PATH" 2>/dev/null | tail -1)
+    if [[ -n "$last_line" ]]; then
+        local timestamp=$(echo "$last_line" | grep -oE '\[20[0-9]{2}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' | tr -d '[')
+        if [[ -n "$timestamp" ]]; then
+            date -j -f "%Y-%m-%d %H:%M:%S" "$timestamp" "+%s" 2>/dev/null
+        fi
+    fi
+}
+
+get_next_screenshot_time() {
+    local last_screenshot=$(get_last_screenshot_time)
+    local activity_start=$(get_activity_start_time)
+    
+    if [[ -n "$activity_start" ]] && [[ -n "$last_screenshot" ]]; then
+        if [[ $activity_start -gt $last_screenshot ]]; then
+            echo $((activity_start + INTERVAL_SECONDS))
+            return
+        fi
+    fi
+    
+    if [[ -n "$last_screenshot" ]]; then
+        echo $((last_screenshot + INTERVAL_SECONDS))
+        return
+    fi
+    
+    if [[ -n "$activity_start" ]]; then
+        echo $((activity_start + INTERVAL_SECONDS))
+        return
+    fi
+}
+
 format_time() {
     local seconds=$1
     if [[ $seconds -lt 0 ]]; then
@@ -51,8 +83,9 @@ format_time() {
 
 # Get current state
 project=$(get_current_project)
-last_screenshot=$(get_last_screenshot_time)
 now=$(date +%s)
+next_screenshot=$(get_next_screenshot_time)
+last_screenshot=$(get_last_screenshot_time)
 
 if [[ -z "$project" ]]; then
     # Not tracking
@@ -64,8 +97,7 @@ if [[ -z "$project" ]]; then
     exit 0
 fi
 
-if [[ -n "$last_screenshot" ]]; then
-    next_screenshot=$((last_screenshot + INTERVAL_SECONDS))
+if [[ -n "$next_screenshot" ]]; then
     time_until=$((next_screenshot - now))
     formatted=$(format_time $time_until)
     

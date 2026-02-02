@@ -75,6 +75,44 @@ get_last_screenshot_time() {
     fi
 }
 
+get_activity_start_time() {
+    # Get the most recent activity start (after any tracking restart)
+    local last_line=$(grep "Sent create activity request" "$LOG_PATH" 2>/dev/null | tail -1)
+    if [[ -n "$last_line" ]]; then
+        local timestamp=$(echo "$last_line" | grep -oE '\[20[0-9]{2}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' | tr -d '[')
+        if [[ -n "$timestamp" ]]; then
+            date -j -f "%Y-%m-%d %H:%M:%S" "$timestamp" "+%s" 2>/dev/null
+        fi
+    fi
+}
+
+get_next_screenshot_time() {
+    local last_screenshot=$(get_last_screenshot_time)
+    local activity_start=$(get_activity_start_time)
+    local now=$(date +%s)
+    
+    # If activity started after last screenshot, use activity start as baseline
+    if [[ -n "$activity_start" ]] && [[ -n "$last_screenshot" ]]; then
+        if [[ $activity_start -gt $last_screenshot ]]; then
+            # New session - calculate from activity start
+            echo $((activity_start + INTERVAL_SECONDS))
+            return
+        fi
+    fi
+    
+    # Normal case - calculate from last screenshot
+    if [[ -n "$last_screenshot" ]]; then
+        echo $((last_screenshot + INTERVAL_SECONDS))
+        return
+    fi
+    
+    # Fallback - use activity start if no screenshots yet
+    if [[ -n "$activity_start" ]]; then
+        echo $((activity_start + INTERVAL_SECONDS))
+        return
+    fi
+}
+
 # Default port mapping (override in config.sh)
 if ! declare -f get_project_port &>/dev/null; then
     get_project_port() {
@@ -182,11 +220,10 @@ main() {
             continue
         fi
         
-        local last_screenshot=$(get_last_screenshot_time)
         local now=$(date +%s)
+        local next_screenshot=$(get_next_screenshot_time)
         
-        if [[ -n "$last_screenshot" ]]; then
-            local next_screenshot=$((last_screenshot + INTERVAL_SECONDS))
+        if [[ -n "$next_screenshot" ]]; then
             local time_until=$((next_screenshot - now))
             local warn_at=$((next_screenshot - WARN_BEFORE))
             
@@ -202,10 +239,10 @@ main() {
                 last_warned=$now
             fi
             
-            # After screenshot, reset
+            # After expected screenshot time, check if it happened and reset
             if [[ $now -gt $next_screenshot ]]; then
-                local new_last=$(get_last_screenshot_time)
-                if [[ "$new_last" != "$last_screenshot" ]]; then
+                local new_next=$(get_next_screenshot_time)
+                if [[ "$new_next" != "$next_screenshot" ]]; then
                     log "Screenshot taken. Next in ${INTERVAL_SECONDS}s"
                     last_warned=0
                 fi
@@ -230,15 +267,18 @@ case "${1:-run}" in
         focus_project_windows "$project" "30"
         ;;
     next)
-        last=$(get_last_screenshot_time)
         now=$(date +%s)
-        if [[ -n "$last" ]]; then
-            next=$((last + INTERVAL_SECONDS))
+        next=$(get_next_screenshot_time)
+        last=$(get_last_screenshot_time)
+        activity=$(get_activity_start_time)
+        
+        if [[ -n "$next" ]]; then
             remaining=$((next - now))
-            log "Last screenshot: $(date -r $last '+%H:%M:%S')"
+            [[ -n "$last" ]] && log "Last screenshot: $(date -r $last '+%H:%M:%S')"
+            [[ -n "$activity" ]] && [[ $activity -gt ${last:-0} ]] && log "Activity restart: $(date -r $activity '+%H:%M:%S')"
             log "Next screenshot: $(date -r $next '+%H:%M:%S') (in ${remaining}s)"
         else
-            log "No screenshot found in log"
+            log "No screenshot data found"
         fi
         ;;
     *)
