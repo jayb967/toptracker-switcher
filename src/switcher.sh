@@ -186,7 +186,14 @@ EOF
 }
 
 focus_editor_on_builtin() {
-    # Prefer CodeLayer if running
+    # Prefer CodeLayer-Pro if running (newer version)
+    if pgrep -f "CodeLayer-Pro.app" &>/dev/null; then
+        log "  ✓ Editor: CodeLayer-Pro"
+        osascript -e 'tell application "CodeLayer-Pro" to activate' 2>/dev/null || true
+        return 0
+    fi
+    
+    # Fall back to old CodeLayer if running
     if pgrep -f "CodeLayer.app" &>/dev/null; then
         log "  ✓ Editor: CodeLayer"
         osascript -e 'tell application "CodeLayer" to activate' 2>/dev/null || true
