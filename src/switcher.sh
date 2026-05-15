@@ -12,6 +12,8 @@ INTERVAL_SECONDS="${INTERVAL_SECONDS:-900}"
 WARN_BEFORE="${WARN_BEFORE:-30}"
 KEEPALIVE_ENABLED="${KEEPALIVE_ENABLED:-1}"
 PREVENT_SLEEP="${PREVENT_SLEEP:-1}"
+WINDOW_SWITCH_ENABLED="${WINDOW_SWITCH_ENABLED:-1}"
+PREFERRED_EDITOR="${PREFERRED_EDITOR:-auto}"
 
 # Caffeinate management (prevents screen sleep)
 caffeinate_pid=""
@@ -185,35 +187,58 @@ return "not found"
 EOF
 }
 
+try_focus_editor() {
+    local editor="$1"
+    case "$editor" in
+        codelayer-pro)
+            if pgrep -f "CodeLayer-Pro.app" &>/dev/null; then
+                log "  ✓ Editor: CodeLayer-Pro"
+                osascript -e 'tell application "CodeLayer-Pro" to activate' 2>/dev/null || true
+                return 0
+            fi
+            ;;
+        codelayer)
+            if pgrep -f "CodeLayer.app" &>/dev/null; then
+                log "  ✓ Editor: CodeLayer"
+                osascript -e 'tell application "CodeLayer" to activate' 2>/dev/null || true
+                return 0
+            fi
+            ;;
+        vscode)
+            if pgrep -f "Visual Studio Code.app" &>/dev/null; then
+                log "  ✓ Editor: VS Code"
+                osascript -e 'tell application "Visual Studio Code" to activate' 2>/dev/null || true
+                return 0
+            fi
+            ;;
+        cursor)
+            if pgrep -f "Cursor.app" &>/dev/null; then
+                log "  ✓ Editor: Cursor"
+                osascript -e 'tell application "Cursor" to activate' 2>/dev/null || true
+                return 0
+            fi
+            ;;
+    esac
+    return 1
+}
+
 focus_editor_on_builtin() {
-    # Prefer CodeLayer-Pro if running (newer version)
-    if pgrep -f "CodeLayer-Pro.app" &>/dev/null; then
-        log "  ✓ Editor: CodeLayer-Pro"
-        osascript -e 'tell application "CodeLayer-Pro" to activate' 2>/dev/null || true
-        return 0
+    if [[ "$PREFERRED_EDITOR" != "auto" ]]; then
+        # User chose a specific editor
+        if try_focus_editor "$PREFERRED_EDITOR"; then
+            return 0
+        fi
+        log "  ⚠ Preferred editor '$PREFERRED_EDITOR' not running"
+        return 1
     fi
-    
-    # Fall back to old CodeLayer if running
-    if pgrep -f "CodeLayer.app" &>/dev/null; then
-        log "  ✓ Editor: CodeLayer"
-        osascript -e 'tell application "CodeLayer" to activate' 2>/dev/null || true
-        return 0
-    fi
-    
-    # Then VS Code
-    if pgrep -f "Visual Studio Code.app" &>/dev/null; then
-        log "  ✓ Editor: VS Code"
-        osascript -e 'tell application "Visual Studio Code" to activate' 2>/dev/null || true
-        return 0
-    fi
-    
-    # Then Cursor
-    if pgrep -f "Cursor.app" &>/dev/null; then
-        log "  ✓ Editor: Cursor"
-        osascript -e 'tell application "Cursor" to activate' 2>/dev/null || true
-        return 0
-    fi
-    
+
+    # Auto mode: try editors in priority order
+    local editors=("codelayer-pro" "codelayer" "vscode" "cursor")
+    for editor in "${editors[@]}"; do
+        if try_focus_editor "$editor"; then
+            return 0
+        fi
+    done
     return 1
 }
 
@@ -221,7 +246,12 @@ focus_project_windows() {
     local project="$1"
     local time_remaining="${2:-30}"
     local focused=0
-    
+
+    if [[ "$WINDOW_SWITCH_ENABLED" != "1" ]]; then
+        log "Window switching disabled — skipping"
+        return 0
+    fi
+
     log "Switching to: $project"
     
     # Focus editor
@@ -252,6 +282,11 @@ focus_project_windows() {
 main() {
     log "TopTracker Switcher - Predictive Mode"
     log "Interval: ${INTERVAL_SECONDS}s, Warning: ${WARN_BEFORE}s before"
+    if [[ "$WINDOW_SWITCH_ENABLED" == "1" ]]; then
+        log "Window switching: enabled (editor: $PREFERRED_EDITOR)"
+    else
+        log "Window switching: disabled"
+    fi
     if [[ "$KEEPALIVE_ENABLED" == "1" ]]; then
         log "Keep-alive: enabled (random 25-60s)"
     fi

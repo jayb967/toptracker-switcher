@@ -29,6 +29,16 @@ INTERVAL_SECONDS=900
 # How many seconds before screenshot to switch windows
 WARN_BEFORE=30
 
+# Window switching: automatically focus editor + Chrome before screenshots
+# Set to 1 to enable, 0 to disable
+WINDOW_SWITCH_ENABLED=1
+
+# Preferred editor to focus before screenshots
+# Options: "auto", "codelayer-pro", "codelayer", "vscode", "cursor"
+# "auto" uses the first running editor in priority order:
+#   CodeLayer-Pro > CodeLayer > VS Code > Cursor
+PREFERRED_EDITOR="auto"
+
 # Keep-alive: prevent idle detection by simulating minimal activity
 # Set to 1 to enable, 0 to disable. Interval is randomized (25-60 seconds)
 KEEPALIVE_ENABLED=1

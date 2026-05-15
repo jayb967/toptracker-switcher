@@ -95,6 +95,12 @@ INTERVAL_SECONDS=900
 # How many seconds before the screenshot to switch windows
 WARN_BEFORE=30
 
+# Enable/disable automatic window switching (1=on, 0=off)
+WINDOW_SWITCH_ENABLED=1
+
+# Which editor to focus: "auto", "codelayer-pro", "codelayer", "vscode", "cursor"
+PREFERRED_EDITOR="auto"
+
 # Keep-alive: prevent idle detection with randomized mouse nudges (1=on, 0=off)
 KEEPALIVE_ENABLED=1
 
@@ -110,6 +116,8 @@ PREVENT_SLEEP=1
 | `TOPTRACKER_EMAIL` | auto-detected | Your TopTracker account email; used to query the correct database tables |
 | `INTERVAL_SECONDS` | `900` (15 min) | Time between screenshots; must match your TopTracker settings |
 | `WARN_BEFORE` | `30` | Seconds before the screenshot to switch windows |
+| `WINDOW_SWITCH_ENABLED` | `1` | Enable/disable automatic window switching before screenshots |
+| `PREFERRED_EDITOR` | `auto` | Which editor to focus: `auto`, `codelayer-pro`, `codelayer`, `vscode`, `cursor` |
 | `KEEPALIVE_ENABLED` | `1` | Enable/disable mouse nudge keep-alive to prevent idle timeout |
 | `PREVENT_SLEEP` | `1` | Enable/disable `caffeinate` to prevent screen sleep while tracking |
 
