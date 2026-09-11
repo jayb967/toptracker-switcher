@@ -276,6 +276,12 @@ main() {
         # Keep screen awake while tracking
         start_caffeinate
         
+        # Auto-start xbar if not running (for menu bar timer)
+        if ! pgrep -x "xbar" > /dev/null; then
+            log "📊 Starting xbar (tracking detected)..."
+            open -a "xbar"
+        fi
+        
         local now=$(date +%s)
         local next_screenshot=$(get_next_screenshot_time)
         
