@@ -190,6 +190,13 @@ EOF
 try_focus_editor() {
     local editor="$1"
     case "$editor" in
+        humanlayer)
+            if pgrep -f "HumanLayer.app/Contents/MacOS" &>/dev/null; then
+                log "  ✓ Editor: HumanLayer"
+                osascript -e 'tell application "HumanLayer" to activate' 2>/dev/null || true
+                return 0
+            fi
+            ;;
         codelayer-pro)
             if pgrep -f "CodeLayer-Pro.app" &>/dev/null; then
                 log "  ✓ Editor: CodeLayer-Pro"
@@ -233,7 +240,7 @@ focus_editor_on_builtin() {
     fi
 
     # Auto mode: try editors in priority order
-    local editors=("codelayer-pro" "codelayer" "vscode" "cursor")
+    local editors=("humanlayer" "vscode" "codelayer-pro" "codelayer" "cursor")
     for editor in "${editors[@]}"; do
         if try_focus_editor "$editor"; then
             return 0

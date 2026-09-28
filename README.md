@@ -21,7 +21,7 @@ TopTracker periodically captures screenshots as proof of work. This tool monitor
 2. Parses TopTracker's application log to find the last screenshot timestamp
 3. Calculates the next screenshot time based on the configured interval (default: 15 minutes)
 4. ~30 seconds before the next screenshot, automatically focuses:
-   - Your code editor (CodeLayer-Pro, CodeLayer, VS Code, or Cursor — in priority order)
+   - Your code editor (HumanLayer, VS Code, CodeLayer-Pro, CodeLayer, or Cursor — in priority order)
    - The Chrome tab matching your project's localhost URL (on external monitors)
 5. Sends a macOS notification with the switch status
 6. The xbar plugin shows a live countdown in the menu bar, refreshing every 5 seconds
@@ -98,7 +98,7 @@ WARN_BEFORE=30
 # Enable/disable automatic window switching (1=on, 0=off)
 WINDOW_SWITCH_ENABLED=1
 
-# Which editor to focus: "auto", "codelayer-pro", "codelayer", "vscode", "cursor"
+# Which editor to focus: "auto", "humanlayer", "vscode", "codelayer-pro", "codelayer", "cursor"
 PREFERRED_EDITOR="auto"
 
 # Keep-alive: prevent idle detection with randomized mouse nudges (1=on, 0=off)
@@ -117,7 +117,7 @@ PREVENT_SLEEP=1
 | `INTERVAL_SECONDS` | `900` (15 min) | Time between screenshots; must match your TopTracker settings |
 | `WARN_BEFORE` | `30` | Seconds before the screenshot to switch windows |
 | `WINDOW_SWITCH_ENABLED` | `1` | Enable/disable automatic window switching before screenshots |
-| `PREFERRED_EDITOR` | `auto` | Which editor to focus: `auto`, `codelayer-pro`, `codelayer`, `vscode`, `cursor` |
+| `PREFERRED_EDITOR` | `auto` | Which editor to focus: `auto`, `humanlayer`, `vscode`, `codelayer-pro`, `codelayer`, `cursor` |
 | `KEEPALIVE_ENABLED` | `1` | Enable/disable mouse nudge keep-alive to prevent idle timeout |
 | `PREVENT_SLEEP` | `1` | Enable/disable `caffeinate` to prevent screen sleep while tracking |
 
@@ -154,10 +154,11 @@ Clicking the menu bar icon shows the current project, last/next screenshot times
 
 The switcher detects and focuses editors in this priority order:
 
-1. **CodeLayer-Pro** (preferred)
-2. **CodeLayer** (legacy)
-3. **Visual Studio Code**
-4. **Cursor**
+1. **HumanLayer** (preferred)
+2. **Visual Studio Code**
+3. **CodeLayer-Pro** (legacy)
+4. **CodeLayer** (legacy)
+5. **Cursor**
 
 The first running editor found is activated. Chrome tabs are focused on external monitors (windows with x-coordinate >= 1700).
 
